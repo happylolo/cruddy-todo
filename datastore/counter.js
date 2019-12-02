@@ -18,8 +18,10 @@ const zeroPaddedNumber = (num) => {
 const readCounter = (callback) => {
   fs.readFile(exports.counterFile, (err, fileData) => {
     if (err) {
+      // If nothing exists on the hard drive, we'll assume that the value is 0.
       callback(null, 0);
     } else {
+      // Otherwise, get the number in fileData.
       callback(null, Number(fileData));
     }
   });
@@ -38,12 +40,25 @@ const writeCounter = (count, callback) => {
 
 // Public API - Fix this function //////////////////////////////////////////////
 
-exports.getNextUniqueId = () => {
-  counter = counter + 1;
-  return zeroPaddedNumber(counter);
+exports.getNextUniqueId = (callback) => {
+  // // Sync version:
+  // // Fetch the old counter from the hard drive.
+  // let counter = readCounter();
+  // // Increment the counter.
+  // counter += 1;
+  // // Write the new counter back to the hard drive.
+  // writeCounter(counter);
+  // return zeroPaddedNumber(counter);
+
+  // Why not the above sync version? Because writeCounter and readCounter are not synchronous functions, we cannot guarantee they return the actual counter value. So we need to turn this into asynchronous code:
+  readCounter((err, currentCount) => {
+    writeCounter(currentCount + 1, (err, uniqueId) => {
+      // In writeCounter, we have zeroPaddedNumber(count)
+      callback(err, uniqueId);
+      // No need to handle err here because readCounter and writeCounter already did that.
+    });
+  });
 };
-
-
 
 // Configuration -- DO NOT MODIFY //////////////////////////////////////////////
 
