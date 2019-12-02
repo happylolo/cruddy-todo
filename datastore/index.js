@@ -7,10 +7,26 @@ var items = {};
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
+// Create: saving new todos on the hard drive
 exports.create = (text, callback) => {
-  var id = counter.getNextUniqueId();
-  items[id] = text;
-  callback(null, { id, text });
+  // Old sync code:
+  // var id = counter.getNextUniqueId();
+  // items[id] = text;
+  // callback(null, { id, text });
+
+  // Async Code:
+  counter.getNextUniqueId((err, id) => {
+    let filePath = path.join(exports.dataDir, `${id}.txt`);
+    // fs.writeFile(file, data[, options], callback)
+    // Reference: https://nodejs.org/api/fs.html#fs_fs_writefile_file_data_options_callback
+    fs.writeFile(filePath, text, (err) => {
+      if (err) {
+        callback(err);
+      } else {
+        callback(null, { id, text });
+      }
+    });
+  });
 };
 
 exports.readAll = (callback) => {
