@@ -3,7 +3,8 @@ const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
 
-var items = {};
+const Promise = require('bluebird');
+const readFilePromise = Promise.promisify(fs.readFile);
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
@@ -46,18 +47,25 @@ exports.readAll = (callback) => {
     }
 
     let data = _.map(files, (file) => {
-      // The file may looks like /Users/Miaozhen.Zhang@ibm.com/Documents/Github/Projects/cruddy-todo/test/testData/00001.txt. And the last piece: 00001.txt is called "base file name". All the things in front of it is called "path" to that file.
-      // Reference: https://nodejs.org/api/path.html#path_path_basename_path_ext
+      // Base file name looks like this: 00001.txt
       // If we pass ".txt" as the second parameter, path.basename will extract the piece in front of ".txt"
+      // Reference: https://nodejs.org/api/path.html#path_path_basename_path_ext
       let id = path.basename(file, '.txt');
+      let filePath = path.join(exports.dataDir, file);
+      return readFilePromise(filePath)
+        .then(fileData => {
+          return {
+            id: id,
+            text: fileData.toString(),
+          };
+        });
 
-      // According to the learning app, use the message's id (that you identified from the filename) for both the id field and the text field for now.
-      return {
-        id: id,
-        text: id,
-      };
-
-      callback(err, data);
+      // The Promise.all() method returns a single Promise that fulfills when all of the promises passed as an iterable have been fulfilled or when the iterable contains no promises. It rejects with the reason of the first promise that rejects.
+      // Reference: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+      Promise.all(data)
+        .then((items) => {
+          callback(null, items);
+        });
     });
   });
 };
